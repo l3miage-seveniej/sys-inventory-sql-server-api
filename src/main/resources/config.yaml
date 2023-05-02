@@ -1,0 +1,6 @@
+sql_remote:
+  host: "article-stock-serveur.database.windows.net"
+  port: "1433"
+  user: "seveniej"
+  password: "rGj6uTJ7ep&"
+  db: "article-stock"

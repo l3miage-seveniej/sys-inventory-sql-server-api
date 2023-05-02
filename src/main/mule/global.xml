@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="a9a5135d-d110-46dd-ab5c-5cda3e5530e0" file="config.yaml" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="7346f610-2fcd-43da-9860-b5df03d12280" >
+		<db:mssql-connection host="${sql_remote.host}" port="${sql_remote.port}" user="${sql_remote.user}" password="${sql_remote.password}" databaseName="${sql_remote.db }"/>
+	</db:config>
+</mule>
