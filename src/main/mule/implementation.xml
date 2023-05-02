@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="GetArticle" doc:id="ccb132b7-2f23-4e03-b9ea-da0a417d1b0f" >
+		<http:listener doc:name="Listener" doc:id="9d535059-d485-497d-b8e2-b2460a9b0df6" config-ref="HTTP_Listener_config" path="/article"/>
+		  <flow-ref doc:name="setTypeArticle" doc:id="c5fbb6c5-ee8a-4901-ab93-ff3b0d00c790" name="setTypeArticle"/>
+		<validation:is-true doc:name="Is valid type" doc:id="a6d5635a-9f0b-4592-9fa1-eb02f9a9e35c" expression="#[['Fourniture','Mobilier','Appareil'] contains vars.type_article]" message="#['Invalid type article' ++ ' ' ++ (vars.type_article default' ')]"/>
+		<db:select doc:name="Select" doc:id="ae97a4f7-7c1c-4b76-9f05-96056c50288c" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM dbo.test]]></db:sql>
+		</db:select>
+		<ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+	</flow>
+	<sub-flow name="setTypeArticle" doc:id="24c1e3f2-e3cd-45a6-abb1-cf0f972d982c" >
+		<set-variable value="#[message.attributes.queryParams.type_article]" doc:name="type_article" doc:id="859f9e08-8e08-406c-809e-a2d0511c8ba9" variableName="type_article"/>
+	</sub-flow>
+</mule>
