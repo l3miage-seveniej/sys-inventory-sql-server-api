@@ -71,6 +71,13 @@
 			<artifactId>mssql-jdbc</artifactId>
 			<version>7.0.0.jre8</version>
 		</dependency>
+		<dependency>
+			<groupId>46d8f4d4-a034-4617-9836-868ba3b3e6af</groupId>
+			<artifactId>miniproject</artifactId>
+			<version>1.0.3</version>
+			<classifier>raml</classifier>
+			<type>zip</type>
+		</dependency>
 	</dependencies>
 
 	<repositories>
