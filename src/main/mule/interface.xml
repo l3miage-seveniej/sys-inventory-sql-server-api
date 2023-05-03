@@ -187,15 +187,7 @@ output application/json
         
     </flow>
     <flow name="post:\article:application\json:main-config">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  message: "Article Added"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+		<flow-ref doc:name="PostArticle" doc:id="f392cd25-d74e-408e-87bb-fb39c70bfdd2" name="PostArticle"/>
+      
     </flow>
 </mule>

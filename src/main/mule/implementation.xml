@@ -10,7 +10,7 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
 	<flow name="GetArticle" doc:id="ccb132b7-2f23-4e03-b9ea-da0a417d1b0f" >
 		<http:listener doc:name="" doc:id="9d535059-d485-497d-b8e2-b2460a9b0df6" config-ref="HTTP_Listener_config" path="/article" allowedMethods="GET" responseStreamingMode="ALWAYS"/>
-		  <flow-ref doc:name="setTypeArticle" doc:id="c5fbb6c5-ee8a-4901-ab93-ff3b0d00c790" name="setTypeArticle"/>
+		<set-variable value="#[message.attributes.queryParams.type_article]" doc:name="type_article" doc:id="859f9e08-8e08-406c-809e-a2d0511c8ba9" variableName="type_article" />
 		<choice doc:name="Choice" doc:id="96937089-9fd6-4f1f-810f-3dcfd2c04fd6" >
 			<when expression="#[vars.type_article != null]">
 				<validation:is-true doc:name="Is valid type" doc:id="a6d5635a-9f0b-4592-9fa1-eb02f9a9e35c" expression="#[['fourniture','mobilier','appareil'] contains vars.type_article]" message="#['Invalid type article' ++ ' ' ++ (vars.type_article default' ')]" />
@@ -43,24 +43,22 @@ payload map ( payload01 , indexOfPayload01 ) -> {
             </ee:message>
         </ee:transform>
 	</flow>
-	<sub-flow name="setTypeArticle" doc:id="24c1e3f2-e3cd-45a6-abb1-cf0f972d982c">
-		<set-variable value="#[message.attributes.queryParams.type_article]" doc:name="type_article" doc:id="859f9e08-8e08-406c-809e-a2d0511c8ba9" variableName="type_article" />
-	</sub-flow>
-	<flow name="GetArticleByID" doc:id="c22a0a5d-8aa7-499b-a3b3-03763abf0d22" >
-		<http:listener doc:name="Listener" doc:id="13263599-53e7-43a8-a2b7-dd314235558e" config-ref="HTTP_Listener_config" path="article/{id}" allowedMethods="GET"/>
+	<flow name="GetArticleByID" doc:id="c22a0a5d-8aa7-499b-a3b3-03763abf0d22">
+		<http:listener doc:name="Listener" doc:id="13263599-53e7-43a8-a2b7-dd314235558e" config-ref="HTTP_Listener_config" path="article/{id}" allowedMethods="GET" />
         <db:select doc:name="Select" doc:id="eb0feadc-c703-4cb1-8b19-b1f916748020" config-ref="Database_Config">
-			<db:sql ><![CDATA[SELECT *
+			<db:sql><![CDATA[SELECT *
 FROM dbo.Article_Stock
 WHERE ID = :ID]]></db:sql>
-			<db:input-parameters ><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
+			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="0c31a765-06c7-41be-a5e5-8c100a7033cc" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="00fa5b35-41f2-4957-a292-2717e9e96d8d" message="L'article que vous recherchez n'existe pas"/>
+		<ee:transform doc:name="Transform Message" doc:id="0c31a765-06c7-41be-a5e5-8c100a7033cc">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload map ( payload01 , indexOfPayload01 ) -> {
-	id: (payload01.id default "") ++ payload01.ID,
+	id:   payload01.ID,
 	title: payload01.titre default "",
 	type_article: (payload01.type_article default "") ++ payload01."type",
 	stock_available: payload01.stock_available default 0,
@@ -68,5 +66,18 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+	</flow>
+	<flow name="PostArticle" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
+		<http:listener doc:name="Listener" doc:id="76407c0a-cf67-49c1-94c9-8d0357eded7a" config-ref="HTTP_Listener_config" path="/article" allowedMethods="POST"/>
+		  <ee:transform doc:id="1477817d-b1e6-4281-a540-e792b82af7a5">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Article Added"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
 	</flow>
 </mule>
