@@ -1,0 +1,11 @@
+%dw 2.0
+
+type auto_c22a0a5d_8aa7_499b_a3b3_03763abf0d22_Output_Payload = {
+  type_article: "Mobilier" | "Fourniture" | "Appareil", 
+  data_update?: String, 
+  id: String, 
+  title: String, 
+  stock_available: Number, 
+  _?: Any
+}
+

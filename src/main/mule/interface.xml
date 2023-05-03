@@ -179,28 +179,12 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="get:\article:main-config">
-        <flow-ref doc:name="Flow Reference" doc:id="a20ac05f-6c49-4039-af3b-1c2b2a618855" name="GetArticle" />
+        <flow-ref doc:name="GetArticle" doc:id="a20ac05f-6c49-4039-af3b-1c2b2a618855" name="GetArticle" />
     </flow>
     <flow name="get:\article\(id):main-config">
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: "1",
-  title: "stylo",
-  type_article: "Fourniture",
-  stock_available: 33,
-  data_update: "2023-01-01T00:00:00Z"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+		<flow-ref doc:name="GetArticleByID" doc:id="e7e636b8-cdc2-41fb-b1a2-0cb7ccd70da6" name="GetArticleByID"/>
+        
+        
     </flow>
     <flow name="post:\article:application\json:main-config">
         <ee:transform>

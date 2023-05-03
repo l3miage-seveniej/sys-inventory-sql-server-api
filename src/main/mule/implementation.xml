@@ -13,7 +13,38 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 		  <flow-ref doc:name="setTypeArticle" doc:id="c5fbb6c5-ee8a-4901-ab93-ff3b0d00c790" name="setTypeArticle"/>
 		<validation:is-true doc:name="Is valid type" doc:id="a6d5635a-9f0b-4592-9fa1-eb02f9a9e35c" expression="#[['Fourniture','Mobilier','Appareil'] contains vars.type_article]" message="#['Invalid type article' ++ ' ' ++ (vars.type_article default' ')]"/>
 		<db:select doc:name="Select" doc:id="ae97a4f7-7c1c-4b76-9f05-96056c50288c" config-ref="Database_Config">
-			<db:sql ><![CDATA[SELECT * FROM dbo.test]]></db:sql>
+			<db:sql ><![CDATA[SELECT * 
+FROM dbo.test 
+WHERE type_article = :type_article]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'type_article' :vars.type_article}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01.id default "",
+	title: payload01.titre default "",
+	type_article: payload01.type_article,
+	stock_available: payload01.stock_available default 0,
+	data_update: payload01.date_update as String default ""
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+	</flow>
+	<flow name="GetArticleByID" doc:id="c22a0a5d-8aa7-499b-a3b3-03763abf0d22" >
+		<http:listener doc:name="Listener" doc:id="13263599-53e7-43a8-a2b7-dd314235558e" config-ref="HTTP_Listener_config" path="/{ID}"/>
+		<ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <db:select doc:name="Select" doc:id="eb0feadc-c703-4cb1-8b19-b1f916748020" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT *
+FROM dbo.test
+WHERE id = :ID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
 		</db:select>
 		<ee:transform>
             <ee:message>
