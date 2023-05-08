@@ -76,13 +76,6 @@
 			<version>7.0.0.jre8</version>
 		</dependency>
 		<dependency>
-			<groupId>46d8f4d4-a034-4617-9836-868ba3b3e6af</groupId>
-			<artifactId>miniproject</artifactId>
-			<version>1.0.3</version>
-			<classifier>raml</classifier>
-			<type>zip</type>
-		</dependency>
-		<dependency>
 			<groupId>org.mule.modules</groupId>
 			<artifactId>mule-validation-module</artifactId>
 			<version>2.0.2</version>
@@ -92,6 +85,13 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>8.0.30</version>
+		</dependency>
+		<dependency>
+			<groupId>46d8f4d4-a034-4617-9836-868ba3b3e6af</groupId>
+			<artifactId>miniproject</artifactId>
+			<version>1.0.7</version>
+			<classifier>raml</classifier>
+			<type>zip</type>
 		</dependency>
 	</dependencies>
 

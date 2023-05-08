@@ -4,14 +4,22 @@ title: MiniProject
 types:
   Article: !include Project_Types/articleType.raml
 
+traits:
+  client-id-required:
+    headers:
+      client_id:
+        type: string
+      client_secret:
+        type: string
+    responses:
+      401:
+        description: Unauthorized, The client_id or client_secret are not valid or the client does not have access.
 
 /article:
   /{id}:
+    is: [client-id-required]
     get:
       description: Get All Articles 
-      headers:
-        username: string
-        password: string
       responses:
        200:
          body:
@@ -19,48 +27,10 @@ types:
              type: Article
              examples:
                 output: !include Project_TypesExemples/article.json
-    
-    delete:
-      description: Delete Article by ID
-      headers:
-        username: string
-        password: string
-      body:
-        application/json:
-          type: Article
-          examples:
-            input: !include Project_TypesExemples/article.json
-      responses:
-        200:
-          body:
-            application/json:
-              example:
-                message: Article deleted (but not really)
-
-    put:
-      description: Update Article by ID
-      headers:
-        username: string
-        password: string
-      body:
-        application/json:
-          type: Article
-          examples:
-            input: !include Project_TypesExemples/article.json
-      responses:
-          200:
-            body:
-              application/json:
-                example:
-                  message: Article updated (but not really)
-
-
-
+                
+  is: [client-id-required]
   get:
     description: Get All Articles 
-    headers:
-      username: string
-      password: string
     responses:
       200:
         body:
@@ -72,9 +42,9 @@ types:
 
   post:
     description: Add Article 
-    headers:
-      username: string
-      password: string
+    queryParameters:
+      forceParams:
+        required: false
     body:
       application/json:
         type: array
@@ -88,30 +58,11 @@ types:
             example:
               message : Article Added   
 
-
-  delete:
-    description: Delete a list of Articles
-    headers:
-        username: string
-        password: string
-    body:
-      application/json:
-         type: Article[]
-         examples:
-           input: !include Project_TypesExemples/articles.json
-     
-    responses:
-        200:
-          body:
-            application/json:
-              example:
-                message: Articles deleted (but not really)
-            
   put:
     description: Update a list of Articles
-    headers:
-        username: string
-        password: string
+    queryParameters:
+      forceParams:
+        required: false
     body:
       application/json:
          type: Article[]
@@ -124,26 +75,6 @@ types:
                 example:
                   message: Articles updated (but not really)
 
-
-
-
-# /auth:
-#   get:
-#     description: Get Connexion 
-#     headers:
-#         username: string
-#         password: string
-#     responses:
-#         200:
-#           body:
-#             application/json:
-#               example:
-#                 message: Authentication Succeeded
-#         401:
-#           body:
-#             application/json:
-#               example:
-#                 message: Authentication failed
 
 
 
