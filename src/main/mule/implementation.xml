@@ -69,7 +69,8 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	</flow>
 	<flow name="PostArticle" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
 		<http:listener doc:name="Listener" doc:id="76407c0a-cf67-49c1-94c9-8d0357eded7a" config-ref="HTTP_Listener_config" path="/article" allowedMethods="POST"/>
-		<set-variable value="#[payload.id]" doc:name=" Set listPayloadId" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="listPayloadIdd"/>
+		<set-variable doc:name=" Set forceParams" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]"/>
+		<set-variable value="#[payload]" doc:name="Set listArticle" doc:id="b64e9d41-8c3f-4adf-8d96-c709fcd1f2f2" variableName="listArticle"/>
 		<ee:transform doc:name="Generate dynamic in-clause" doc:id="eb3d5aa3-37e3-45e5-a86e-efb780e34614">
 			<ee:message>
 			</ee:message>
@@ -79,7 +80,7 @@ output application/java
 ---
 
 
-vars.listPayloadId map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
+payload.id map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<ee:transform doc:name="Generate dynamic inputParameters" doc:id="cbe08250-ae05-43a4-a14d-6fc062fbe26a">
@@ -88,21 +89,36 @@ vars.listPayloadId map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ",
 				<ee:set-variable variableName="inputParameters" ><![CDATA[%dw 2.0
 output application/java
 ---
-vars.listPayloadId map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
+payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
 			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:id="1477817d-b1e6-4281-a540-e792b82af7a5">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e" >
+			<when expression="#[vars.forceParams != null]">
+				<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="487fb3d5-3c31-4257-baa4-f9e9157a2dfe" message="ftftftf"/>
+			</when>
+			<otherwise >
+				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant"/>
+				<set-payload value="#[vars.listArticle]" doc:name="Set Payload" doc:id="905d9b13-8670-4792-8c80-46f7fa95be63" />
+				<foreach doc:name="Insertion d'article" doc:id="9a2f7a19-9f8d-406b-aa48-39bacba7e9a8" collection="#[payload]">
+					<db:insert doc:name="Insert" doc:id="42b292f7-ecca-400c-83ad-620bc866fc05" config-ref="Database_Config">
+						<db:sql ><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update)
+values (:ID,:titre,:type,:stock_available,:date_update);]]></db:sql>
+						<db:input-parameters ><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
+					</db:insert>
+				</foreach>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="a6ce2d04-61aa-4b8b-b856-b7607813c0b6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-
 payload]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>

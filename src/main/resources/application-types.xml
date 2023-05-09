@@ -337,14 +337,5 @@ type: string]]></types:shape>
       </types:output-event>
     </types:processor-declaration>
   </types:enrichment>
-  <types:enrichment select="#1477817d-b1e6-4281-a540-e792b82af7a5">
-    <types:processor-declaration>
-      <types:input-event>
-        <types:message>
-          <types:payload type="articlesPost"/>
-        </types:message>
-      </types:input-event>
-    </types:processor-declaration>
-  </types:enrichment>
   <types:enrichment select="#a5725ef0-8b59-4fce-b854-0fcfd996376b"/>
 </types:mule>
