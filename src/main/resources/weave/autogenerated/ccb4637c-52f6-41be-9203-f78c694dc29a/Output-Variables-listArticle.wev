@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_ccb4637c_52f6_41be_9203_f78c694dc29a_Output_Variables_listArticle = Any
+
