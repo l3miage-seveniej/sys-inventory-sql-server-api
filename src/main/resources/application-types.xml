@@ -273,6 +273,10 @@ type articlesPost = Array<{|  id: String,   title: String,   type_article: Strin
 
 ]]></types:shape>
     </types:type>
+    <types:type name="InClause" format="java">
+      <types:shape format="raml"><![CDATA[#%RAML 1.0 DataType
+type: string]]></types:shape>
+    </types:type>
   </types:catalog>
   <types:enrichment select="#ccb132b7-2f23-4e03-b9ea-da0a417d1b0f">
     <types:processor-declaration>
@@ -342,4 +346,5 @@ type articlesPost = Array<{|  id: String,   title: String,   type_article: Strin
       </types:input-event>
     </types:processor-declaration>
   </types:enrichment>
+  <types:enrichment select="#a5725ef0-8b59-4fce-b854-0fcfd996376b"/>
 </types:mule>

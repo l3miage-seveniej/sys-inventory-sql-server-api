@@ -69,25 +69,37 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	</flow>
 	<flow name="PostArticle" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
 		<http:listener doc:name="Listener" doc:id="76407c0a-cf67-49c1-94c9-8d0357eded7a" config-ref="HTTP_Listener_config" path="/article" allowedMethods="POST"/>
-		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="a1b83411-1a5c-499a-a571-ad7a4fc4cac2" variableName="payloadNotOverride" />
-		<foreach doc:name="For Each" doc:id="bccaae7f-32f0-475d-96a7-a178d91ac979" collection="#[vars.payloadNotOverride]">
-			<db:select doc:name="Select" doc:id="7ebf0c34-7e4e-4646-8d27-1762e2a384af" config-ref="Database_Config">
-				<db:sql ><![CDATA[SELECT ID 
-FROM dbo.Article_Stock
-WHERE ID =:ID]]></db:sql>
-				<db:input-parameters ><![CDATA[#[{'ID':payload.id}]]]></db:input-parameters>
-			</db:select>
-			<validation:is-empty-collection doc:name="Is empty collection" doc:id="791a28a4-ea9b-47df-b162-121526e266d3" />
-			<logger level="INFO" doc:name="Logger" doc:id="b16f4d43-81f9-4458-8cc8-3dbe4ec1a3cc" message="#[payload.id]" />
-		</foreach>
+		<set-variable value="#[payload.id]" doc:name=" Set listPayloadId" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="listPayloadId"/>
+		<ee:transform doc:name="Generate dynamic in-clause" doc:id="eb3d5aa3-37e3-45e5-a86e-efb780e34614">
+			<ee:message>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="inClause" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.listPayloadId map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Generate dynamic inputParameters" doc:id="cbe08250-ae05-43a4-a14d-6fc062fbe26a">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="inputParameters" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.listPayloadId map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
+			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
+			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
+		</db:select>
 		<ee:transform doc:id="1477817d-b1e6-4281-a540-e792b82af7a5">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-  message: "Article Added"
-}]]></ee:set-payload>
+
+payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
 	</flow>
