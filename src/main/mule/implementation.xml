@@ -77,6 +77,7 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 				<ee:set-variable variableName="inClause" ><![CDATA[%dw 2.0
 output application/java
 ---
+
 vars.listPayloadId map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
