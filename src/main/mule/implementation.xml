@@ -69,7 +69,7 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	</flow>
 	<flow name="PostArticle" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
 		<http:listener doc:name="Listener" doc:id="76407c0a-cf67-49c1-94c9-8d0357eded7a" config-ref="HTTP_Listener_config" path="/article" allowedMethods="POST"/>
-		<set-variable value="#[payload.id]" doc:name=" Set listPayloadId" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="listPayloadId"/>
+		<set-variable value="#[payload.id]" doc:name=" Set listPayloadId" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="listPayloadIdd"/>
 		<ee:transform doc:name="Generate dynamic in-clause" doc:id="eb3d5aa3-37e3-45e5-a86e-efb780e34614">
 			<ee:message>
 			</ee:message>
