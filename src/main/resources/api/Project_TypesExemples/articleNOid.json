@@ -1,8 +1,8 @@
   {
-    "titre": "stylo",
-    "type": "Fourniture",
+    "title": "stylo",
+    "type_article": "Fourniture",
     "stock_available": 33,
-    "date_update": "2023-01-01T00:00:00Z"
+    "data_update": "2023-01-01T00:00:00Z"
    
   }
   

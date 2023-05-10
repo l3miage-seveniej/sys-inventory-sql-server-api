@@ -2,22 +2,22 @@
 
 type: object
 properties:
-  ID:
+  id:
     type: string
     required: true 
-  titre:
+  title:
     type:  string
     required: true
-  type:
+  type_article:
     required: true
     enum:
-      - fourniture
-      - mobilier
-      - appareil
+      - Fourniture
+      - Mobilier
+      - Appareil
   stock_available: 
     type: integer
     required: true
-  date_update: 
+  data_update: 
     type: datetime
     default: 1900-01-01T00:00:00Z
     required : false

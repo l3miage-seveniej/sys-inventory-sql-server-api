@@ -1,0 +1,9 @@
+%dw 2.0
+
+type auto_2b539631_5747_4ff4_9dc0_5b4a7070987e_Input_Variables_inputParameters = { _?: java_lang_Object }
+type java_lang_Object = {|  |} {"typeAlias": "Object",
+"class": "java.lang.Object",
+"typeId": "java.lang.Object"}
+
+
+

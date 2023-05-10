@@ -1,18 +1,19 @@
 [
   {
-    "ID":"4",
-    "titre": "chaise",
-    "type": "mobilier",
+    "id":"4",
+    "title": "chaise",
+    "type_article": "Mobilier",
     "stock_available": 33,
-    "date_update": "2021-01-01T00:00:00Z"
+    "data_update": "2021-01-01T00:00:00Z"
    
   },
   {
-    "ID":"4",
-    "titre": "lit",
-    "type": "mobilier",
+    "id":"4",
+    "title": "lit",
+    "type_article": "Mobilier",
     "stock_available": 44,
-    "date_update": "2020-06-06T00:00:00Z"
+    "data_update": "2020-06-06T00:00:00Z"
    
-  }  
+  }
+  
 ]

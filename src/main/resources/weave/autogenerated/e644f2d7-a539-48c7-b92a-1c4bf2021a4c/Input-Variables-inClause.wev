@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_e644f2d7_a539_48c7_b92a_1c4bf2021a4c_Input_Variables_inClause = Any
+

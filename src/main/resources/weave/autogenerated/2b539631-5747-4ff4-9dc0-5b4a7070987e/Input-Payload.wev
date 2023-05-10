@@ -1,6 +1,6 @@
 %dw 2.0
 
-type auto_9d2e9448_16da_4945_902e_0f82bdb74e6c_Output_Variables_inputParameters = { _?: java_lang_Object }
+type auto_2b539631_5747_4ff4_9dc0_5b4a7070987e_Input_Payload = Array<{ _?: java_lang_Object }>
 type java_lang_Object = {|  |} {"typeAlias": "Object",
 "class": "java.lang.Object",
 "typeId": "java.lang.Object"}

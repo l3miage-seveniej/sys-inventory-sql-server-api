@@ -17,12 +17,36 @@ traits:
     responses:
       401:
         description: Unauthorized, The client_id or client_secret are not valid or the client does not have access.
-    
 
 /articles:
-
+  /{id}:
+    is: [client-id-required]
+    get:
+      description: Get All Articles 
+      responses:
+       200:
+         body:
+            application/json:
+             type: Article
+             examples:
+                output: !include Project_TypesExemples/article.json
+    
+    put:
+      description: Update Article
+      
+      body:
+        application/json:
+          type: Article
+          examples:
+            input: !include /Project_TypesExemples/article.json
+      responses:
+        201:
+          body:
+            application/json:
+              example:
+                message : Article updated
+                
   is: [client-id-required]
-
   get:
     description: Get All Articles 
     responses:
@@ -32,9 +56,11 @@ traits:
             type: Article[]
             examples:
               output : !include Project_TypesExemples/articles.json
+ 
 
   post:
     description: Add Articles
+    
     body:
       application/json:
         type: array
@@ -47,9 +73,11 @@ traits:
           application/json:
             example:
               message : Article Added  
+  
 
   put:
     description: Update a list of Articles
+    
     body:
       application/json:
          type: Article[]
@@ -62,24 +90,6 @@ traits:
                 example:
                   message: Articles updated (but not really)
 
-  
-  /{ID}:
-    
-    is: [client-id-required]
-    
-    get:
-      description: Get All Articles 
-      responses:
-       200:
-         body:
-            application/json:
-             type: Article
-             examples:
-                output: !include Project_TypesExemples/article.json
-    
-   
-                
-  
 
   
 

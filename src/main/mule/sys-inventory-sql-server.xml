@@ -78,60 +78,29 @@ payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumul
 			</ee:variables>
 		</ee:transform>
 	</sub-flow>
-	<flow name="PostPutArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
-		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles "/>
-		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="InitialisationPostArticle"/>
-		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
-			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
-			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
-		</db:select>
-		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e" >
-			<when expression="#[vars.forceParams != null and isEmpty(payload)]" >
-				<set-payload value="#[vars.listArticle]" doc:name="Set Payload" doc:id="6dc898cf-cd21-4b9e-99f2-b5e0833ba8e8" />
-				<foreach doc:name="For Each" doc:id="c1cee2c4-c45b-4606-aa6b-505d60fa7349" collection="#[vars.listArticle]">
-					<db:insert doc:name="Insert" doc:id="37b8e509-b64c-482a-8969-3e733150ec4a" config-ref="Database_Config">
-						<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
-values (:ID,:titre,:type,:stock_available,:date_update);]]></db:sql>
-						<db:input-parameters ><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
-					</db:insert>
-				</foreach>
-			</when>
-			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) != sizeOf(vars.listArticle)]" >
-				<scatter-gather doc:name="Scatter-Gather" doc:id="60c39ee3-4755-45e5-b28c-0768bea1ec66">
-							<route>
-								<ee:transform doc:name="Transform Message" doc:id="20f7c002-c1d1-40fb-ac54-7227bec15f00">
-					<ee:message>
-						<ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-
-vars.listArticle
-filter (payload.ID contains $.id )
-map {
-    id: $.id,
-    title: $.title,
-    type_article: $.type_article,
-    stock_available : $.stock_available,
-    data_update: $.data_update
-}]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
-								<foreach doc:name="For Each" doc:id="a7bb4333-3f4c-4361-a597-4988a3a20db1" collection="#[payload]">
-							<db:update doc:name="Update" doc:id="255dfe3a-f10b-42d4-8d78-e711e105ad10" config-ref="Database_Config">
-											<db:sql><![CDATA[UPDATE Article_Stock
-SET titre = :titre,
-	type = :type,
+	<sub-flow name="InsertionMultiple" doc:id="e644f2d7-a539-48c7-b92a-1c4bf2021a4c" >
+		<db:bulk-insert doc:name="Bulk insert" doc:id="51f94ec5-ed72-40d6-8c02-da02fe25fbb8" config-ref="Database_Config">
+					<db:bulk-input-parameters><![CDATA[#[vars.listArticle]]]></db:bulk-input-parameters>
+					<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
+values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
+				</db:bulk-insert>
+	</sub-flow>
+	<sub-flow name="UpdateMultiple" doc:id="2b539631-5747-4ff4-9dc0-5b4a7070987e" >
+		<db:bulk-update doc:name="Bulk update" doc:id="f24628fe-8daa-4055-be43-ece73c9d273a" config-ref="Database_Config">
+			<db:bulk-input-parameters ><![CDATA[#[vars.listArticle]]]></db:bulk-input-parameters>
+			<db:sql ><![CDATA[UPDATE Article_Stock
+SET titre = :title,
+	type = :type_article,
 	stock_available = :stock_available,
-	date_update = :date_update	
-WHERE ID = :ID]]></db:sql>
-											<db:input-parameters><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
-										</db:update>
-									</foreach>
-							</route>
-							<route>
-								<ee:transform doc:name="Transform Message" doc:id="56eafd99-bc60-4773-b269-89b4075e7956">
-									<ee:message>
-										<ee:set-payload><![CDATA[%dw 2.0
+	date_update = :data_update	
+WHERE ID = :id]]></db:sql>
+		</db:bulk-update>
+	</sub-flow>
+	<sub-flow name="ProcessPostPut" doc:id="6e33cac1-7e18-4251-b3ef-99553fed1b17" >
+		<scatter-gather doc:name="Scatter-Gather" doc:id="5d2537fd-eded-4e6a-99cd-53f70157f0d7" >
+			<route >
+				<db:bulk-insert doc:name="Bulk insert" doc:id="93d19bd8-d4d6-48b0-a0d1-b3e9a21ccd8b" config-ref="Database_Config">
+						<db:bulk-input-parameters><![CDATA[#[%dw 2.0
 output application/json
 ---
 
@@ -143,44 +112,57 @@ map {
     type_article: $.type_article,
     stock_available : $.stock_available,
     data_update: $.data_update
-}]]></ee:set-payload>
-									</ee:message>
-								</ee:transform>
-								<foreach doc:name="For Each" doc:id="98d83dcd-e823-4902-8c4d-79e3fac3accf" collection="#[payload]">
-										<db:insert doc:name="Insert" doc:id="3f66abb0-061a-4499-a156-7a7f452bbb7c" config-ref="Database_Config">
-											<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update)
-values (:ID,:titre,:type,:stock_available,:date_update);]]></db:sql>
-											<db:input-parameters><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
-										</db:insert>
-									</foreach>
-							</route>
-						</scatter-gather>
+}]]]></db:bulk-input-parameters>
+						<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
+values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
+					</db:bulk-insert>
+			</route>
+			<route >
+				<db:bulk-update doc:name="Bulk update" doc:id="c550e115-b957-4558-a1b2-f5c4773ecd17" config-ref="Database_Config">
+						<db:bulk-input-parameters><![CDATA[#[%dw 2.0
+output application/json
+---
+
+vars.listArticle
+filter (payload.ID contains $.id )
+map {
+    id: $.id,
+    title: $.title,
+    type_article: $.type_article,
+    stock_available : $.stock_available,
+    data_update: $.data_update
+}]]]></db:bulk-input-parameters>
+						<db:sql><![CDATA[UPDATE Article_Stock
+SET titre = :title,
+	type = :type_article,
+	stock_available = :stock_available,
+	date_update = :data_update	
+WHERE ID = :id]]></db:sql>
+					</db:bulk-update>
+			</route>
+		</scatter-gather>
+	</sub-flow>
+	<flow name="PostPutArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
+		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles " />
+		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="InitialisationPostArticle"/>
+		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
+			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
+			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e" >
+			<when expression="#[vars.forceParams != null and isEmpty(payload)]" >
+				<flow-ref doc:name="InsertionMultiple" doc:id="d89e447f-f62a-4242-b849-08d39b5bb3e1" name="InsertionMultiple"/>
 			</when>
 			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) == sizeOf(vars.listArticle)]">
-				<set-payload value="#[payload]" doc:name="Set Payload" doc:id="641f1dde-1f8e-418a-94b8-7e1f86ae9baa" />
-				<foreach doc:name="For Each" doc:id="8a2fc569-54a8-45f9-badf-b5a4f0e11b97" collection="#[vars.listArticle]">
-							<db:update doc:name="Update" doc:id="b356636c-5711-45b0-9ed9-819acd3fa0b4" config-ref="Database_Config">
-								<db:sql><![CDATA[UPDATE Article_Stock
-SET titre = :titre,
-	type = :type,
-	stock_available = :stock_available,
-	date_update = :date_update	
-WHERE ID = :ID]]></db:sql>
-								<db:input-parameters><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
-							</db:update>
-						</foreach>
+				<flow-ref doc:name="UpdateMultiple" doc:id="9f419fb8-be74-4e99-b757-3524b80e0edb" name="UpdateMultiple"/>
 			</when>
-			<otherwise >
-				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant" >
+			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) != sizeOf(vars.listArticle)]" >
+				<flow-ref doc:name="ProcessPostPut" doc:id="eeefe6ab-8161-406d-aaed-f0d588b7f895" name="ProcessPostPut"/>
+			</when>
+			<otherwise>
+				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant">
 				</validation:is-empty-collection>
-				<set-payload value="#[vars.listArticle]" doc:name="Set Payload" doc:id="b5b88748-b3c7-49df-9ae4-5bd485d2c2bf" />
-				<foreach doc:name="Insertion d'article" doc:id="9a2f7a19-9f8d-406b-aa48-39bacba7e9a8" collection="#[payload]">
-					<db:insert doc:name="Insert" doc:id="42b292f7-ecca-400c-83ad-620bc866fc05" config-ref="Database_Config">
-						<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
-values (:ID,:titre,:type,:stock_available,:date_update);]]></db:sql>
-						<db:input-parameters ><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
-					</db:insert>
-				</foreach>
+				<flow-ref doc:name="InsertionMultiple" doc:id="78a6e02b-3d67-4629-8fb5-d30d48bc0487" name="InsertionMultiple"/>
 			</otherwise>
 		</choice>
 		<ee:transform doc:name="Transform Message" doc:id="a6ce2d04-61aa-4b8b-b856-b7607813c0b6" >
