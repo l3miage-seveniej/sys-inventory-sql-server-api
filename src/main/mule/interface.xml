@@ -121,10 +121,10 @@ output application/json
         </error-handler>
     </flow>
     <flow name="put:\articles:application\json:main-config">
-		<flow-ref doc:name="PostPutArticles" doc:id="ce32a1d8-65d0-42b9-8165-d0d2fbd9040c" name="PostPutArticles"/>
+		<flow-ref doc:name="PutArticles" doc:id="ce32a1d8-65d0-42b9-8165-d0d2fbd9040c" name="PutArticles"/>
     </flow>
     <flow name="put:\articles\(id):application\json:main-config">
-		<flow-ref doc:name="PostPutArticles" doc:id="b006cae9-96b2-4e3c-89be-3afc17137d73" name="PostPutArticles"/>
+		<flow-ref doc:name="PostArticles" doc:id="b006cae9-96b2-4e3c-89be-3afc17137d73" name="PostArticles"/>
     </flow>
     <flow name="get:\articles:main-config">
 		<flow-ref doc:name="GetArticles" doc:id="816087cd-c479-4ffd-ad78-e1104b6c275c" name="GetArticles"/>
@@ -133,6 +133,6 @@ output application/json
 		<flow-ref doc:name="GetArticleByID" doc:id="265a7e79-3d4c-4003-8a59-1182fe5fbdc1" name="GetArticleByID"/>
     </flow>
     <flow name="post:\articles:application\json:main-config">
-		<flow-ref doc:name="PostPutArticles" doc:id="5737f80b-bcb5-452c-8dc7-6ef32f6d6e19" name="PostPutArticles"/>
+		<flow-ref doc:name="PostPutArticles" doc:id="5737f80b-bcb5-452c-8dc7-6ef32f6d6e19" name="PostArticles"/>
     </flow>
 </mule>

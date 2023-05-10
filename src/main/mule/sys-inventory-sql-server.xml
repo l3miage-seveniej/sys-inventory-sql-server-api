@@ -53,7 +53,7 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 			</ee:message>
 		</ee:transform>
 	</flow>
-	<sub-flow name="InitialisationPostArticle" doc:id="ccb4637c-52f6-41be-9203-f78c694dc29a" >
+	<sub-flow name="Initialisation" doc:id="ccb4637c-52f6-41be-9203-f78c694dc29a" >
 		<set-variable doc:name=" Set forceParams" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
 		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="b64e9d41-8c3f-4adf-8d96-c709fcd1f2f2" variableName="originalPayload" />
 		<ee:transform doc:name="Generate dynamic in-clause" doc:id="eb3d5aa3-37e3-45e5-a86e-efb780e34614">
@@ -144,9 +144,9 @@ WHERE ID = :id]]></db:sql>
 			</route>
 		</scatter-gather>
 	</sub-flow>
-	<flow name="PostPutArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
+	<flow name="PostArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
 		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles " />
-		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="InitialisationPostArticle"/>
+		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="Initialisation"/>
 		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
 			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
@@ -191,5 +191,38 @@ output application/json
 				<set-variable value="409" doc:name="Set httpStatus" doc:id="82e1f308-ce4b-40e5-b232-e768eab614f6" variableName="httpStatus"/>
 			</on-error-propagate>
 		</error-handler>
+	</flow>
+	<flow name="PutArticles" doc:id="e4493cc6-734e-4ab8-9145-c3ebd6006286" >
+		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="de1f9f69-bb4b-4dea-b7ca-1dd3c8e5fb54" message="Veuillez définir une liste de 1 ou plusieurs articles " />
+		<flow-ref doc:name="InitialisationPutArticle" doc:id="663fd08a-c0b7-425f-822a-deae9be3f4ed" name="Initialisation"/>
+		<db:select doc:name="Select" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config">
+			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
+			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
+		</db:select>
+		<flow-ref doc:name="StructurePayloadAndVars" doc:id="650e7ace-171f-4fa0-8d57-c4d89537c518" name="StructurePayloadAndVars"/>
+		<choice doc:name="Choice" doc:id="a9d42e42-f0a2-40b6-bbc1-81b89494ba66" >
+			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]" >
+				<flow-ref doc:name="InsertionMultiple" doc:id="305540c2-6c9e-488a-a527-3c01ad1ee567" name="InsertionMultiple"/>
+			</when>
+			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDlist)) and sizeOf(payload) == sizeOf(vars.matchIDList)]">
+				<flow-ref doc:name="UpdateMultiple" doc:id="e898c0d7-f3e5-487e-aabe-66ee173cf740" name="UpdateMultiple"/>
+			</when>
+			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDList)) and sizeOf(payload) != sizeOf(vars.matchIDList)]" >
+				<flow-ref doc:name="ProcessPostPut" doc:id="f6473f85-0508-4667-b2a1-bf34e0c26d4f" name="ProcessPostPut"/>
+			</when>
+			<otherwise>
+				<validation:is-true doc:name="Is true" doc:id="ec4ad1d3-03d2-44a5-9032-351c9bc33914" expression="#[sizeOf(payload) == sizeOf(vars.matchIDList)]" message="Le ou les articles que vous voulez mettre à jour n'existent pas en base"/>
+				<flow-ref doc:name="UpdateMultiple" doc:id="72bfc2e3-78f8-4a51-9885-e2fe0aa3ff55" name="UpdateMultiple"/>
+			
+</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="dcf18135-0daa-4c34-92a4-37afd9565359" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>
