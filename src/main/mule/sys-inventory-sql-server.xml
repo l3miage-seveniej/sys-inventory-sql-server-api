@@ -55,7 +55,7 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	</flow>
 	<sub-flow name="InitialisationPostArticle" doc:id="ccb4637c-52f6-41be-9203-f78c694dc29a" >
 		<set-variable doc:name=" Set forceParams" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
-		<set-variable value="#[payload]" doc:name="Set listArticle" doc:id="b64e9d41-8c3f-4adf-8d96-c709fcd1f2f2" variableName="listArticle" />
+		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="b64e9d41-8c3f-4adf-8d96-c709fcd1f2f2" variableName="originalPayload" />
 		<ee:transform doc:name="Generate dynamic in-clause" doc:id="eb3d5aa3-37e3-45e5-a86e-efb780e34614">
 			<ee:message>
 			</ee:message>
@@ -78,16 +78,18 @@ payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumul
 			</ee:variables>
 		</ee:transform>
 	</sub-flow>
+	<sub-flow name="StructurePayloadAndVars" doc:id="141ebc0f-da2b-414a-bac2-3989117fd6b5" >
+		<set-variable value="#[payload]" doc:name="Set match ID list" doc:id="b901275f-2db0-4406-84ee-55401afaf377" variableName="matchIDList" />
+		<set-payload value="#[vars.originalPayload]" doc:name="Set Payload" doc:id="205a233d-e124-489d-953e-293bd5adad9f" />
+	</sub-flow>
 	<sub-flow name="InsertionMultiple" doc:id="e644f2d7-a539-48c7-b92a-1c4bf2021a4c" >
 		<db:bulk-insert doc:name="Bulk insert" doc:id="51f94ec5-ed72-40d6-8c02-da02fe25fbb8" config-ref="Database_Config">
-					<db:bulk-input-parameters><![CDATA[#[vars.listArticle]]]></db:bulk-input-parameters>
 					<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
 values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
 				</db:bulk-insert>
 	</sub-flow>
 	<sub-flow name="UpdateMultiple" doc:id="2b539631-5747-4ff4-9dc0-5b4a7070987e" >
 		<db:bulk-update doc:name="Bulk update" doc:id="f24628fe-8daa-4055-be43-ece73c9d273a" config-ref="Database_Config">
-			<db:bulk-input-parameters ><![CDATA[#[vars.listArticle]]]></db:bulk-input-parameters>
 			<db:sql ><![CDATA[UPDATE Article_Stock
 SET titre = :title,
 	type = :type_article,
@@ -104,8 +106,8 @@ WHERE ID = :id]]></db:sql>
 output application/json
 ---
 
-vars.listArticle
-filter (!(payload.ID contains $.id))
+payload
+filter (!(vars.matchIDList.ID contains $.id))
 map {
     id: $.id,
     title: $.title,
@@ -123,8 +125,8 @@ values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
 output application/json
 ---
 
-vars.listArticle
-filter (payload.ID contains $.id )
+payload
+filter (vars.matchIDList.ID contains $.id )
 map {
     id: $.id,
     title: $.title,
@@ -149,18 +151,19 @@ WHERE ID = :id]]></db:sql>
 			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
+		<flow-ref doc:name="StructurePayloadAndVars" doc:id="68989cf7-541f-4a06-a690-5af875083830" name="StructurePayloadAndVars"/>
 		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e" >
-			<when expression="#[vars.forceParams != null and isEmpty(payload)]" >
+			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]" >
 				<flow-ref doc:name="InsertionMultiple" doc:id="d89e447f-f62a-4242-b849-08d39b5bb3e1" name="InsertionMultiple"/>
 			</when>
-			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) == sizeOf(vars.listArticle)]">
+			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDlist)) and sizeOf(payload) == sizeOf(vars.matchIDList)]">
 				<flow-ref doc:name="UpdateMultiple" doc:id="9f419fb8-be74-4e99-b757-3524b80e0edb" name="UpdateMultiple"/>
 			</when>
-			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) != sizeOf(vars.listArticle)]" >
+			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDList)) and sizeOf(payload) != sizeOf(vars.matchIDList)]" >
 				<flow-ref doc:name="ProcessPostPut" doc:id="eeefe6ab-8161-406d-aaed-f0d588b7f895" name="ProcessPostPut"/>
 			</when>
 			<otherwise>
-				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant">
+				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant" values="#[vars.matchIDList]">
 				</validation:is-empty-collection>
 				<flow-ref doc:name="InsertionMultiple" doc:id="78a6e02b-3d67-4629-8fb5-d30d48bc0487" name="InsertionMultiple"/>
 			</otherwise>
