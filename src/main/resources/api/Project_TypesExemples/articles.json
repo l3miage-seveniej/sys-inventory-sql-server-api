@@ -1,18 +1,18 @@
 [
   {
-    "id": "1",
-    "title": "stylo",
-    "type_article": "Fourniture",
+    "ID": "1",
+    "titre": "stylo",
+    "type": "fourniture",
     "stock_available": 33,
-    "data_update": "2023-01-01T00:00:00Z"
+    "date_update": "2023-01-01T00:00:00Z"
    
   },
   {
-    "id": "2",
-    "title": "ecran",
-    "type_article": "Appareil",
+    "ID": "2",
+    "titre": "ecran",
+    "type": "appareil",
     "stock_available": 4,
-    "data_update": "2023-06-06T00:00:00Z"
+    "date_update": "2023-06-06T00:00:00Z"
    
   }
   

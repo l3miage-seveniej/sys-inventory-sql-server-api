@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
     <apikit:config name="main-config" api="main.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <flow name="main-main">
         <http:listener config-ref="HTTP_Listener_config" path="/api/*">
@@ -120,24 +120,16 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
-    <flow name="put:\article:application\json:main-config">
-		<ee:transform doc:name="Transform Message" doc:id="3534c9d5-b586-4c3e-948e-d9c1e19a8a7a" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/java
----
-{
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+    <flow name="put:\articles:application\json:main-config">
+        <flow-ref doc:name="PostPutArticles" doc:id="b132a9f9-2ce0-47fc-a5d8-a857fc4c0608" name="PostPutArticles" />
     </flow>
-    <flow name="get:\article:main-config">
-		<flow-ref doc:name="GetArticle" doc:id="989e5cb8-0a8f-416d-a226-51b37c537e30" name="GetArticle"/>
+    <flow name="get:\articles:main-config">
+        <flow-ref doc:name="GetArticles" doc:id="06048fc2-49e3-465e-8b64-fd1b70d7a292" name="GetArticles" />
     </flow>
-    <flow name="get:\article\(id):main-config">
-		<flow-ref doc:name="GetArticleByID" doc:id="60c84843-45ec-4e7e-8427-a3ca38c662a2" name="GetArticleByID"/>
+    <flow name="get:\articles\(ID):main-config">
+        <flow-ref doc:name="GetArticleByID" doc:id="3ebe2da5-a4cd-46c0-8339-f605fa96aba5" name="GetArticleByID" />
     </flow>
-    <flow name="post:\article:application\json:main-config">
-		<flow-ref doc:name="PostArticle" doc:id="4c0bb1ca-8720-462c-8bde-da4c070d0f67" name="PostArticle"/>
+    <flow name="post:\articles:application\json:main-config">
+        <flow-ref doc:name="PostPutArticles" doc:id="5e2c26fb-7e63-45dd-85cc-86442bc5b40e" name="PostPutArticles" />
     </flow>
 </mule>

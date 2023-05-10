@@ -9,26 +9,11 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
 http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
-	<flow name="GetArticle" doc:id="ccb132b7-2f23-4e03-b9ea-da0a417d1b0f" >
-		<http:listener doc:name="" doc:id="9d535059-d485-497d-b8e2-b2460a9b0df6" config-ref="HTTP_Listener_config" path="/article" allowedMethods="GET" responseStreamingMode="ALWAYS"/>
-		<set-variable value="#[message.attributes.queryParams.type_article]" doc:name="type_article" doc:id="859f9e08-8e08-406c-809e-a2d0511c8ba9" variableName="type_article" />
-		<choice doc:name="Choice" doc:id="96937089-9fd6-4f1f-810f-3dcfd2c04fd6" >
-			<when expression="#[vars.type_article != null]">
-				<validation:is-true doc:name="Is valid type" doc:id="a6d5635a-9f0b-4592-9fa1-eb02f9a9e35c" expression="#[['fourniture','mobilier','appareil'] contains vars.type_article]" message="#['Invalid type article' ++ ' ' ++ (vars.type_article default' ')]" />
-				<db:select doc:name="SelectArticleByTypeArticle" doc:id="ae97a4f7-7c1c-4b76-9f05-96056c50288c" config-ref="Database_Config">
-			<db:sql><![CDATA[SELECT * 
-FROM dbo.Article_Stock 
-WHERE type = :type_article]]></db:sql>
-			<db:input-parameters><![CDATA[#[{'type_article' :vars.type_article}]]]></db:input-parameters>
-		</db:select>
-			</when>
-			<otherwise >
-				<db:select doc:name="SelectAllArticle" doc:id="30e1eda3-9758-4741-abad-4f4d0bfb684b" config-ref="Database_Config">
-					<db:sql ><![CDATA[SELECT * 
+	<flow name="GetArticles" doc:id="ccb132b7-2f23-4e03-b9ea-da0a417d1b0f" >
+		<db:select doc:name="SelectAllArticle" doc:id="30e1eda3-9758-4741-abad-4f4d0bfb684b" config-ref="Database_Config">
+					<db:sql><![CDATA[SELECT * 
 FROM dbo.Article_Stock ]]></db:sql>
 				</db:select>
-			</otherwise>
-		</choice>
 		<ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -45,7 +30,6 @@ payload map ( payload01 , indexOfPayload01 ) -> {
         </ee:transform>
 	</flow>
 	<flow name="GetArticleByID" doc:id="8ed183ed-c045-4f88-9d6a-d37f6704d181" >
-		<http:listener doc:name="Listener" doc:id="13263599-53e7-43a8-a2b7-dd314235558e" config-ref="HTTP_Listener_config" path="article/{id}" allowedMethods="GET" />
 		<db:select doc:name="Select" doc:id="eb0feadc-c703-4cb1-8b19-b1f916748020" config-ref="Database_Config">
 			<db:sql><![CDATA[SELECT *
 FROM dbo.Article_Stock
@@ -53,7 +37,6 @@ WHERE ID = :ID]]></db:sql>
 			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
 		</db:select>
 		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="00fa5b35-41f2-4957-a292-2717e9e96d8d" message="L'article que vous recherchez n'existe pas">
-			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:VALID" />
 		</validation:is-not-empty-collection>
 		<ee:transform doc:name="Transform Message" doc:id="0c31a765-06c7-41be-a5e5-8c100a7033cc">
 			<ee:message>
@@ -95,12 +78,7 @@ payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumul
 			</ee:variables>
 		</ee:transform>
 	</sub-flow>
-	<flow name="PostArticle" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
-		<http:listener doc:name="Listener" doc:id="76407c0a-cf67-49c1-94c9-8d0357eded7a" config-ref="HTTP_Listener_config" path="/article" allowedMethods="POST">
-			<http:error-response statusCode="#[vars.httpStatus]">
-				<http:body ><![CDATA[#[payload]]]></http:body>
-			</http:error-response>
-		</http:listener>
+	<flow name="PostPutArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
 		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles "/>
 		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="InitialisationPostArticle"/>
 		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
@@ -118,11 +96,9 @@ values (:ID,:titre,:type,:stock_available,:date_update);]]></db:sql>
 					</db:insert>
 				</foreach>
 			</when>
-			<when expression="#[vars.forceParams != null and !(isEmpty(payload))]" >
-				<choice doc:name="Choice" doc:id="7d870d2f-40ce-4881-859d-ca1094077836" >
-					<when expression="#[sizeOf(payload) != sizeOf(vars.listArticle)]">
-						<scatter-gather doc:name="Scatter-Gather" doc:id="60c39ee3-4755-45e5-b28c-0768bea1ec66" >
-							<route >
+			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) != sizeOf(vars.listArticle)]" >
+				<scatter-gather doc:name="Scatter-Gather" doc:id="60c39ee3-4755-45e5-b28c-0768bea1ec66">
+							<route>
 								<ee:transform doc:name="Transform Message" doc:id="20f7c002-c1d1-40fb-ac54-7227bec15f00">
 					<ee:message>
 						<ee:set-payload><![CDATA[%dw 2.0
@@ -152,7 +128,7 @@ WHERE ID = :ID]]></db:sql>
 										</db:update>
 									</foreach>
 							</route>
-							<route >
+							<route>
 								<ee:transform doc:name="Transform Message" doc:id="56eafd99-bc60-4773-b269-89b4075e7956">
 									<ee:message>
 										<ee:set-payload><![CDATA[%dw 2.0
@@ -179,22 +155,20 @@ values (:ID,:titre,:type,:stock_available,:date_update);]]></db:sql>
 									</foreach>
 							</route>
 						</scatter-gather>
-					</when>
-					<otherwise >
-						<set-payload value="#[payload]" doc:name="Set Payload" doc:id="641f1dde-1f8e-418a-94b8-7e1f86ae9baa" />
-						<foreach doc:name="For Each" doc:id="8a2fc569-54a8-45f9-badf-b5a4f0e11b97" collection="#[vars.listArticle]">
+			</when>
+			<when expression="#[vars.forceParams != null and !(isEmpty(payload)) and sizeOf(payload) == sizeOf(vars.listArticle)]">
+				<set-payload value="#[payload]" doc:name="Set Payload" doc:id="641f1dde-1f8e-418a-94b8-7e1f86ae9baa" />
+				<foreach doc:name="For Each" doc:id="8a2fc569-54a8-45f9-badf-b5a4f0e11b97" collection="#[vars.listArticle]">
 							<db:update doc:name="Update" doc:id="b356636c-5711-45b0-9ed9-819acd3fa0b4" config-ref="Database_Config">
-								<db:sql ><![CDATA[UPDATE Article_Stock
+								<db:sql><![CDATA[UPDATE Article_Stock
 SET titre = :titre,
 	type = :type,
 	stock_available = :stock_available,
 	date_update = :date_update	
 WHERE ID = :ID]]></db:sql>
-								<db:input-parameters ><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
+								<db:input-parameters><![CDATA[#[{'ID' :payload.'id' , 'titre': payload.'title' , 'type':payload.'type_article' ,'stock_available':payload.'stock_available','date_update' : payload.'data_update'}]]]></db:input-parameters>
 							</db:update>
 						</foreach>
-					</otherwise>
-				</choice>
 			</when>
 			<otherwise >
 				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant" >

@@ -11,24 +11,18 @@ traits:
         type: string
       client_secret:
         type: string
+    queryParameters:
+      forceParams:
+        required: false
     responses:
       401:
         description: Unauthorized, The client_id or client_secret are not valid or the client does not have access.
+    
 
-/article:
-  /{id}:
-    is: [client-id-required]
-    get:
-      description: Get All Articles 
-      responses:
-       200:
-         body:
-            application/json:
-             type: Article
-             examples:
-                output: !include Project_TypesExemples/article.json
-                
+/articles:
+
   is: [client-id-required]
+
   get:
     description: Get All Articles 
     responses:
@@ -38,13 +32,9 @@ traits:
             type: Article[]
             examples:
               output : !include Project_TypesExemples/articles.json
- 
 
   post:
-    description: Add Article 
-    queryParameters:
-      forceParams:
-        required: false
+    description: Add Articles
     body:
       application/json:
         type: array
@@ -56,13 +46,10 @@ traits:
         body:
           application/json:
             example:
-              message : Article Added   
+              message : Article Added  
 
   put:
     description: Update a list of Articles
-    queryParameters:
-      forceParams:
-        required: false
     body:
       application/json:
          type: Article[]
@@ -74,6 +61,29 @@ traits:
               application/json:
                 example:
                   message: Articles updated (but not really)
+
+  
+  /{ID}:
+    
+    is: [client-id-required]
+    
+    get:
+      description: Get All Articles 
+      responses:
+       200:
+         body:
+            application/json:
+             type: Article
+             examples:
+                output: !include Project_TypesExemples/article.json
+    
+   
+                
+  
+
+  
+
+  
 
 
 
