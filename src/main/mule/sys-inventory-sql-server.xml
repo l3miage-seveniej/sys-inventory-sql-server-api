@@ -10,24 +10,8 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
 http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
 	<flow name="GetArticles" doc:id="ccb132b7-2f23-4e03-b9ea-da0a417d1b0f" >
-		<db:select doc:name="SelectAllArticle" doc:id="30e1eda3-9758-4741-abad-4f4d0bfb684b" config-ref="Database_Config">
-					<db:sql><![CDATA[SELECT * 
-FROM dbo.Article_Stock ]]></db:sql>
-				</db:select>
-		<ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload map ( payload01 , indexOfPayload01 ) -> {
-	id: (payload01.id default "") ++ payload01.ID,
-	title: payload01.titre default "",
-	type_article: (payload01.type_article default "") ++ payload01."type",
-	stock_available: payload01.stock_available default 0,
-	data_update: payload01.date_update as String default ""
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+		<flow-ref doc:name="Pagination" doc:id="4c2a196c-083b-4003-aa42-25f7eef7bf88" name="Pagination"/>
+		
 	</flow>
 	<flow name="GetArticleByID" doc:id="8ed183ed-c045-4f88-9d6a-d37f6704d181" >
 		<db:select doc:name="Select" doc:id="eb0feadc-c703-4cb1-8b19-b1f916748020" config-ref="Database_Config">
@@ -62,129 +46,42 @@ WHERE ID = :ID]]></db:sql>
 			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
 		</db:select>
 	</flow>
-	<sub-flow name="Initialisation" doc:id="ccb4637c-52f6-41be-9203-f78c694dc29a" >
-		<set-variable doc:name=" Set forceParams" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
-		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="b64e9d41-8c3f-4adf-8d96-c709fcd1f2f2" variableName="originalPayload" />
-		<ee:transform doc:name="Generate dynamic in-clause" doc:id="eb3d5aa3-37e3-45e5-a86e-efb780e34614">
-			<ee:message>
-			</ee:message>
-			<ee:variables>
-				<ee:set-variable variableName="inClause"><![CDATA[%dw 2.0
-output application/java
----
-
-
-payload.id map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<ee:transform doc:name="Generate dynamic inputParameters" doc:id="cbe08250-ae05-43a4-a14d-6fc062fbe26a">
-			<ee:message />
-			<ee:variables>
-				<ee:set-variable variableName="inputParameters"><![CDATA[%dw 2.0
-output application/java
----
-payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-	</sub-flow>
-	<sub-flow name="InsertionMultiple" doc:id="e644f2d7-a539-48c7-b92a-1c4bf2021a4c" >
-		<db:bulk-insert doc:name="Bulk insert" doc:id="51f94ec5-ed72-40d6-8c02-da02fe25fbb8" config-ref="Database_Config">
-					<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
-values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
-				</db:bulk-insert>
-	</sub-flow>
-	<sub-flow name="UpdateMultiple" doc:id="2b539631-5747-4ff4-9dc0-5b4a7070987e" >
-		<db:bulk-update doc:name="Bulk update" doc:id="f24628fe-8daa-4055-be43-ece73c9d273a" config-ref="Database_Config">
-			<db:sql ><![CDATA[UPDATE Article_Stock
-SET titre = :title,
-	type = :type_article,
-	stock_available = :stock_available,
-	date_update = :data_update	
-WHERE ID = :id]]></db:sql>
-		</db:bulk-update>
-	</sub-flow>
-	<sub-flow name="ProcessPostPut" doc:id="6e33cac1-7e18-4251-b3ef-99553fed1b17" >
-		<scatter-gather doc:name="Scatter-Gather" doc:id="5d2537fd-eded-4e6a-99cd-53f70157f0d7" >
-			<route >
-				<db:bulk-insert doc:name="Bulk insert" doc:id="93d19bd8-d4d6-48b0-a0d1-b3e9a21ccd8b" config-ref="Database_Config">
-						<db:bulk-input-parameters><![CDATA[#[%dw 2.0
-output application/json
----
-
-payload
-filter (!(vars.matchIDList.ID contains $.id))
-map {
-    id: $.id,
-    title: $.title,
-    type_article: $.type_article,
-    stock_available : $.stock_available,
-    data_update: $.data_update
-}]]]></db:bulk-input-parameters>
-						<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
-values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
-					</db:bulk-insert>
-			</route>
-			<route >
-				<db:bulk-update doc:name="Bulk update" doc:id="c550e115-b957-4558-a1b2-f5c4773ecd17" config-ref="Database_Config">
-						<db:bulk-input-parameters><![CDATA[#[%dw 2.0
-output application/json
----
-
-payload
-filter (vars.matchIDList.ID contains $.id )
-map {
-    id: $.id,
-    title: $.title,
-    type_article: $.type_article,
-    stock_available : $.stock_available,
-    data_update: $.data_update
-}]]]></db:bulk-input-parameters>
-						<db:sql><![CDATA[UPDATE Article_Stock
-SET titre = :title,
-	type = :type_article,
-	stock_available = :stock_available,
-	date_update = :data_update	
-WHERE ID = :id]]></db:sql>
-					</db:bulk-update>
-			</route>
-		</scatter-gather>
-	</sub-flow>
-	<flow name="PostArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
+	<flow name="PostArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c">
 		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles " />
-		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="Initialisation"/>
+		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="Initialisation" />
 		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config" target="matchIDList">
-			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
-			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
+			<db:sql><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
+			<db:input-parameters><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
-		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e" >
-			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]" >
-				<flow-ref doc:name="InsertionMultiple" doc:id="d89e447f-f62a-4242-b849-08d39b5bb3e1" name="InsertionMultiple"/>
+		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e">
+			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]">
+				<flow-ref doc:name="InsertionMultiple" doc:id="d89e447f-f62a-4242-b849-08d39b5bb3e1" name="InsertionMultiple" />
 			</when>
 			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDlist)) and sizeOf(payload) == sizeOf(vars.matchIDList)]">
-				<flow-ref doc:name="UpdateMultiple" doc:id="9f419fb8-be74-4e99-b757-3524b80e0edb" name="UpdateMultiple"/>
+				<flow-ref doc:name="UpdateMultiple" doc:id="9f419fb8-be74-4e99-b757-3524b80e0edb" name="UpdateMultiple" />
 			</when>
-			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDList)) and sizeOf(payload) != sizeOf(vars.matchIDList)]" >
-				<flow-ref doc:name="ProcessPostPut" doc:id="eeefe6ab-8161-406d-aaed-f0d588b7f895" name="ProcessPostPut"/>
+			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDList)) and sizeOf(payload) != sizeOf(vars.matchIDList)]">
+				<flow-ref doc:name="ProcessPostPut" doc:id="eeefe6ab-8161-406d-aaed-f0d588b7f895" name="ProcessPostPut" />
 			</when>
 			<otherwise>
 				<validation:is-empty-collection doc:name="Is empty collection" doc:id="717d1a10-a3da-4240-9adc-cd1473d240aa" message="Vous ne pouvez pas insérer des articles déjà existant" values="#[vars.matchIDList]">
 				</validation:is-empty-collection>
-				<flow-ref doc:name="InsertionMultiple" doc:id="78a6e02b-3d67-4629-8fb5-d30d48bc0487" name="InsertionMultiple"/>
+				<flow-ref doc:name="InsertionMultiple" doc:id="78a6e02b-3d67-4629-8fb5-d30d48bc0487" name="InsertionMultiple" />
 			</otherwise>
 		</choice>
-		<ee:transform doc:name="Transform Message" doc:id="a6ce2d04-61aa-4b8b-b856-b7607813c0b6" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+		<ee:transform doc:name="Transform Message" doc:id="a6ce2d04-61aa-4b8b-b856-b7607813c0b6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<error-handler  >
+		<error-handler>
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8ec0a00b-fa9b-4f32-ae0e-d2cf9555591e" type="VALIDATION:NOT_EMPTY_COLLECTION">
-				<ee:transform doc:name="Transform Message" doc:id="a749348b-e907-4d3a-b244-2b0dc5854cca" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
+				<ee:transform doc:name="Transform Message" doc:id="a749348b-e907-4d3a-b244-2b0dc5854cca">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
@@ -192,40 +89,44 @@ output application/json
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-				<set-variable value="409" doc:name="Set httpStatus" doc:id="82e1f308-ce4b-40e5-b232-e768eab614f6" variableName="httpStatus"/>
+				<set-variable value="409" doc:name="Set httpStatus" doc:id="82e1f308-ce4b-40e5-b232-e768eab614f6" variableName="httpStatus" />
 			</on-error-propagate>
 		</error-handler>
 	</flow>
-	<flow name="PutArticles" doc:id="e4493cc6-734e-4ab8-9145-c3ebd6006286" >
+	<flow name="PutArticles" doc:id="e4493cc6-734e-4ab8-9145-c3ebd6006286">
 		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="de1f9f69-bb4b-4dea-b7ca-1dd3c8e5fb54" message="Veuillez définir une liste de 1 ou plusieurs articles " />
-		<flow-ref doc:name="InitialisationPutArticle" doc:id="663fd08a-c0b7-425f-822a-deae9be3f4ed" name="Initialisation"/>
+		<flow-ref doc:name="InitialisationPutArticle" doc:id="663fd08a-c0b7-425f-822a-deae9be3f4ed" name="Initialisation" />
 		<db:select doc:name="Select" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config" target="matchIDList">
-			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
-			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
+			<db:sql><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
+			<db:input-parameters><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
-		<choice doc:name="Choice" doc:id="a9d42e42-f0a2-40b6-bbc1-81b89494ba66" >
-			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]" >
-				<flow-ref doc:name="InsertionMultiple" doc:id="305540c2-6c9e-488a-a527-3c01ad1ee567" name="InsertionMultiple"/>
+		<choice doc:name="Choice" doc:id="a9d42e42-f0a2-40b6-bbc1-81b89494ba66">
+			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]">
+				<flow-ref doc:name="InsertionMultiple" doc:id="305540c2-6c9e-488a-a527-3c01ad1ee567" name="InsertionMultiple" />
 			</when>
 			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDlist)) and sizeOf(payload) == sizeOf(vars.matchIDList)]">
-				<flow-ref doc:name="UpdateMultiple" doc:id="e898c0d7-f3e5-487e-aabe-66ee173cf740" name="UpdateMultiple"/>
+				<flow-ref doc:name="UpdateMultiple" doc:id="e898c0d7-f3e5-487e-aabe-66ee173cf740" name="UpdateMultiple" />
 			</when>
-			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDList)) and sizeOf(payload) != sizeOf(vars.matchIDList)]" >
-				<flow-ref doc:name="ProcessPostPut" doc:id="f6473f85-0508-4667-b2a1-bf34e0c26d4f" name="ProcessPostPut"/>
+			<when expression="#[vars.forceParams != null and !(isEmpty(vars.matchIDList)) and sizeOf(payload) != sizeOf(vars.matchIDList)]">
+				<flow-ref doc:name="ProcessPostPut" doc:id="f6473f85-0508-4667-b2a1-bf34e0c26d4f" name="ProcessPostPut" />
 			</when>
 			<otherwise>
-				<validation:is-true doc:name="Is true" doc:id="ec4ad1d3-03d2-44a5-9032-351c9bc33914" expression="#[sizeOf(payload) == sizeOf(vars.matchIDList)]" message="Le ou les articles que vous voulez mettre à jour n'existent pas en base"/>
-				<flow-ref doc:name="UpdateMultiple" doc:id="72bfc2e3-78f8-4a51-9885-e2fe0aa3ff55" name="UpdateMultiple"/>
+				<validation:is-true doc:name="Is true" doc:id="ec4ad1d3-03d2-44a5-9032-351c9bc33914" expression="#[sizeOf(payload) == sizeOf(vars.matchIDList)]" message="Le ou les articles que vous voulez mettre à jour n'existent pas en base" />
+				<flow-ref doc:name="UpdateMultiple" doc:id="72bfc2e3-78f8-4a51-9885-e2fe0aa3ff55" name="UpdateMultiple" />
 			
 </otherwise>
 		</choice>
-		<ee:transform doc:name="Transform Message" doc:id="dcf18135-0daa-4c34-92a4-37afd9565359" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+		<ee:transform doc:name="Transform Message" doc:id="dcf18135-0daa-4c34-92a4-37afd9565359">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 	</flow>
+	
+	
+	
+	
 </mule>

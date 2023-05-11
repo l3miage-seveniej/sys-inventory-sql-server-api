@@ -13,4 +13,143 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="95befe68-d298-410d-bd82-df9864225bd1" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
+	<sub-flow name="Pagination" doc:id="00645780-fc23-4653-8f96-68ef17890bf4" >
+	<ee:transform doc:name="form select query count nb article" doc:id="790c5c87-1099-4006-8bf6-72e85894dc4a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"SELECT count(*)AS TOTAL FROM dbo.Article_Stock  "]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="CallDatabase" doc:id="5f5e0544-51d8-4bce-89be-6f076fade998" name="CallDatabase"/>
+		<set-variable value="#[100 as Number]" doc:name="Initialisation limit" doc:id="fce359d0-a0b8-4071-b2d3-dd8fd843919a" variableName="limit"/>
+		<set-variable value="#[1 as Number]" doc:name="Initialisation offset" doc:id="ddb58544-92e5-46de-8e6e-0c62ea717ab5" variableName="offset"/>
+		<ee:transform doc:name="divide into array based on limit size" doc:id="c4c19409-2942-4870-8aa1-9d51dfad3906" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var rowcount = payload.'TOTAL' reduce ($$ ++ $) as Number
+var maxSize = ceil(rowcount/vars.limit)
+fun prepareList(list:Array, maxSize: Number) = if(sizeOf(list) >= maxSize )
+list
+else
+prepareList(list ++ [(sizeOf(list) + 1) as Number],maxSize)
+---
+prepareList([],maxSize) as Array]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="b0a1d2c8-3e52-4b4b-938b-2117554e4f46" collection="#[payload]">
+			<ee:transform doc:name="form select query to fetch article on limit size" doc:id="e4b5a678-c96d-4d3b-8687-1236ee071f43" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+" SELECT * FROM Article_Stock ORDER BY type OFFSET $(vars.offset) ROWS FETCH NEXT $(vars.offset) ROWS ONLY; "]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<flow-ref doc:name="CallDatabase" doc:id="1b779acb-0c1f-43bf-ad65-a38885706961" name="CallDatabase"/>
+			<set-variable value="#[vars.offset + vars.limit]" doc:name="increase offset(limit  +offset" doc:id="8dd49d4b-0a07-4fca-96ab-a5e4539bc7e5" variableName="offset"/>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="9cb41932-5a11-488c-8e7e-ec4b8652b4aa">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+	</sub-flow>
+	<sub-flow name="Initialisation" doc:id="29929473-0f4f-4362-985e-ef5800c1f520" >
+		<set-variable doc:name=" Set forceParams" doc:id="e2be3e16-8c86-4238-9191-e159b65272be" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
+		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="e2c6ba81-4359-4a2f-a369-f8b54478d76e" variableName="originalPayload" />
+		<ee:transform doc:name="Generate dynamic in-clause" doc:id="98ef50b9-7c73-4f59-bd61-70e32887ca4e">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="inClause"><![CDATA[%dw 2.0
+output application/java
+---
+
+
+payload.id map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Generate dynamic inputParameters" doc:id="c8c0c4b6-90c3-407b-9873-b96b1876485c">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="inputParameters"><![CDATA[%dw 2.0
+output application/java
+---
+payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="ProcessPostPut" doc:id="d1249e4b-4217-4c97-a8aa-ca948bb3338b">
+		<scatter-gather doc:name="Scatter-Gather" doc:id="e77ba404-9580-4c67-bafb-2f58b0981278">
+			<route>
+				<db:bulk-insert doc:name="Bulk insert" doc:id="305bb70e-3868-42ae-b41a-513200d5fb47" config-ref="Database_Config">
+						<db:bulk-input-parameters><![CDATA[#[%dw 2.0
+output application/json
+---
+
+payload
+filter (!(vars.matchIDList.ID contains $.id))
+map {
+    id: $.id,
+    title: $.title,
+    type_article: $.type_article,
+    stock_available : $.stock_available,
+    data_update: $.data_update
+}]]]></db:bulk-input-parameters>
+						<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
+values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
+					</db:bulk-insert>
+			</route>
+			<route>
+				<db:bulk-update doc:name="Bulk update" doc:id="ccfd48f5-c9b5-482f-97a5-72056a3c6fda" config-ref="Database_Config">
+						<db:bulk-input-parameters><![CDATA[#[%dw 2.0
+output application/json
+---
+
+payload
+filter (vars.matchIDList.ID contains $.id )
+map {
+    id: $.id,
+    title: $.title,
+    type_article: $.type_article,
+    stock_available : $.stock_available,
+    data_update: $.data_update
+}]]]></db:bulk-input-parameters>
+						<db:sql><![CDATA[UPDATE Article_Stock
+SET titre = :title,
+	type = :type_article,
+	stock_available = :stock_available,
+	date_update = :data_update	
+WHERE ID = :id]]></db:sql>
+					</db:bulk-update>
+			</route>
+		</scatter-gather>
+	</sub-flow>
+	<sub-flow name="InsertionMultiple" doc:id="81b93347-96d6-480c-880e-c2898aa1846d" >
+		<db:bulk-insert doc:name="Bulk insert" doc:id="5156dd14-7d89-49dc-a217-71e719dad86a" config-ref="Database_Config">
+					<db:sql><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
+values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
+				</db:bulk-insert>
+	</sub-flow>
+	<sub-flow name="UpdateMultiple" doc:id="491eede1-0cdc-4075-b7aa-2b48e0d0fd4a" >
+		<db:bulk-update doc:name="Bulk update" doc:id="17945af2-c960-4a43-8334-b8433cc7d63d" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE Article_Stock
+SET titre = :title,
+	type = :type_article,
+	stock_available = :stock_available,
+	date_update = :data_update	
+WHERE ID = :id]]></db:sql>
+		</db:bulk-update>
+	</sub-flow>
+	<sub-flow name="CallDatabase" doc:id="c284016e-b87f-43c1-b807-e4a2e5f7a4d6" >
+		<db:select doc:name="Select" doc:id="146a254f-22f1-4f41-9fee-30fcb9bec645" config-ref="Database_Config">
+			<db:sql ><![CDATA[#['$(payload)']]]></db:sql>
+		</db:select>
+	</sub-flow>
 </mule>
