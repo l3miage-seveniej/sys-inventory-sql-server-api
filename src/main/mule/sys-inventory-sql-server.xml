@@ -36,6 +36,21 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="bbd51e3e-3db5-43b4-9dca-e8a202bcbd83" type="VALIDATION:EMPTY_COLLECTION">
+				<ee:transform doc:name="Transform Message" doc:id="eeb37e98-fd3c-479c-8ed5-3acc1616f981" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'message': error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="404" doc:name="Set httpStatus" doc:id="caa4204d-2ba3-49fd-829d-caf5d7ca35b9" variableName="httpStatus"/>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 	<flow name="PutArticleByID" doc:id="653399e8-c351-4aa2-8152-b2b6832b5fe9" >
 		<set-variable value="#[payload]" doc:name="Set originalPayload" doc:id="b3d0353b-67a9-496a-8501-8307b77c4961" variableName="originalPayload"/>
@@ -47,7 +62,6 @@ WHERE ID = :ID]]></db:sql>
 		</db:select>
 	</flow>
 	<flow name="PostArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c">
-		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles " />
 		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="Initialisation" />
 		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config" target="matchIDList">
 			<db:sql><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
@@ -74,7 +88,9 @@ WHERE ID = :ID]]></db:sql>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+{
+	'message' : "success yes !"
+}]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<error-handler>
@@ -94,10 +110,9 @@ output application/json
 		</error-handler>
 	</flow>
 	<flow name="PutArticles" doc:id="e4493cc6-734e-4ab8-9145-c3ebd6006286">
-		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="de1f9f69-bb4b-4dea-b7ca-1dd3c8e5fb54" message="Veuillez définir une liste de 1 ou plusieurs articles " />
 		<flow-ref doc:name="InitialisationPutArticle" doc:id="663fd08a-c0b7-425f-822a-deae9be3f4ed" name="Initialisation" />
 		<db:select doc:name="Select" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config" target="matchIDList">
-			<db:sql><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
+			<db:sql><![CDATA[#['SELECT * FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
 		<choice doc:name="Choice" doc:id="a9d42e42-f0a2-40b6-bbc1-81b89494ba66">
@@ -121,9 +136,28 @@ output application/json
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+{
+	'message' : "success yes !",
+	'etat_précédent': vars.matchIDList
+
+}]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ee0eefaf-3320-47d8-bda8-6e1d48be65e1" type="VALIDATION:INVALID_BOOLEAN">
+				<ee:transform doc:name="Transform Message" doc:id="c8849b2a-0097-42cc-a581-4f47ff545596" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'message': error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="409" doc:name="Set httpStatus" doc:id="cc03786e-946d-4aab-9f46-8a782b6972d9" variableName="httpStatus"/>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 	
 	
