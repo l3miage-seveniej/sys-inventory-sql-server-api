@@ -53,6 +53,16 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 			</ee:message>
 		</ee:transform>
 	</flow>
+	<flow name="PutArticleByID" doc:id="653399e8-c351-4aa2-8152-b2b6832b5fe9" >
+		<set-variable value="#[payload]" doc:name="Set originalPayload" doc:id="b3d0353b-67a9-496a-8501-8307b77c4961" variableName="originalPayload"/>
+		<db:select doc:name="Select" doc:id="29f8aecf-afd2-4783-9c40-498a31440386" config-ref="Database_Config">
+			<db:sql><![CDATA[SELECT *
+FROM dbo.Article_Stock
+WHERE ID = :ID]]></db:sql>
+			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
+		</db:select>
+		<flow-ref doc:name="StructurePayloadAndVars" doc:id="d735057e-2230-4cc4-9015-88f0aee02a80" name="StructurePayloadAndVars"/>
+	</flow>
 	<sub-flow name="Initialisation" doc:id="ccb4637c-52f6-41be-9203-f78c694dc29a" >
 		<set-variable doc:name=" Set forceParams" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
 		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="b64e9d41-8c3f-4adf-8d96-c709fcd1f2f2" variableName="originalPayload" />
