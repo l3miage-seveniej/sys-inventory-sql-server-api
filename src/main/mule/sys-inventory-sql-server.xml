@@ -61,7 +61,6 @@ FROM dbo.Article_Stock
 WHERE ID = :ID]]></db:sql>
 			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
 		</db:select>
-		<flow-ref doc:name="StructurePayloadAndVars" doc:id="d735057e-2230-4cc4-9015-88f0aee02a80" name="StructurePayloadAndVars"/>
 	</flow>
 	<sub-flow name="Initialisation" doc:id="ccb4637c-52f6-41be-9203-f78c694dc29a" >
 		<set-variable doc:name=" Set forceParams" doc:id="8303e99f-02aa-4f91-a83e-7021c514cb83" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
@@ -87,10 +86,6 @@ output application/java
 payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-	</sub-flow>
-	<sub-flow name="StructurePayloadAndVars" doc:id="141ebc0f-da2b-414a-bac2-3989117fd6b5" >
-		<set-variable value="#[payload]" doc:name="Set match ID list" doc:id="b901275f-2db0-4406-84ee-55401afaf377" variableName="matchIDList" />
-		<set-payload value="#[vars.originalPayload]" doc:name="Set Payload" doc:id="205a233d-e124-489d-953e-293bd5adad9f" />
 	</sub-flow>
 	<sub-flow name="InsertionMultiple" doc:id="e644f2d7-a539-48c7-b92a-1c4bf2021a4c" >
 		<db:bulk-insert doc:name="Bulk insert" doc:id="51f94ec5-ed72-40d6-8c02-da02fe25fbb8" config-ref="Database_Config">
@@ -157,11 +152,10 @@ WHERE ID = :id]]></db:sql>
 	<flow name="PostArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c" >
 		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="7f72e371-626a-483b-9194-31e607e74484" message="Veuillez définir une liste de 1 ou plusieurs articles " />
 		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="Initialisation"/>
-		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config" target="matchIDList">
 			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
-		<flow-ref doc:name="StructurePayloadAndVars" doc:id="68989cf7-541f-4a06-a690-5af875083830" name="StructurePayloadAndVars"/>
 		<choice doc:name="Choice" doc:id="38a72e98-6e71-404c-968b-d4ab8c710d5e" >
 			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]" >
 				<flow-ref doc:name="InsertionMultiple" doc:id="d89e447f-f62a-4242-b849-08d39b5bb3e1" name="InsertionMultiple"/>
@@ -205,11 +199,10 @@ output application/json
 	<flow name="PutArticles" doc:id="e4493cc6-734e-4ab8-9145-c3ebd6006286" >
 		<validation:is-not-empty-collection doc:name="Is not empty " doc:id="de1f9f69-bb4b-4dea-b7ca-1dd3c8e5fb54" message="Veuillez définir une liste de 1 ou plusieurs articles " />
 		<flow-ref doc:name="InitialisationPutArticle" doc:id="663fd08a-c0b7-425f-822a-deae9be3f4ed" name="Initialisation"/>
-		<db:select doc:name="Select" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config" target="matchIDList">
 			<db:sql ><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters ><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
-		<flow-ref doc:name="StructurePayloadAndVars" doc:id="650e7ace-171f-4fa0-8d57-c4d89537c518" name="StructurePayloadAndVars"/>
 		<choice doc:name="Choice" doc:id="a9d42e42-f0a2-40b6-bbc1-81b89494ba66" >
 			<when expression="#[vars.forceParams != null and isEmpty(vars.matchIDList)]" >
 				<flow-ref doc:name="InsertionMultiple" doc:id="305540c2-6c9e-488a-a527-3c01ad1ee567" name="InsertionMultiple"/>
