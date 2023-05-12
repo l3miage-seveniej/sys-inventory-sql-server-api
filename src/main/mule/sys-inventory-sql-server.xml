@@ -14,12 +14,8 @@ http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/ba
 		
 	</flow>
 	<flow name="GetArticleByID" doc:id="8ed183ed-c045-4f88-9d6a-d37f6704d181" >
-		<db:select doc:name="Select" doc:id="eb0feadc-c703-4cb1-8b19-b1f916748020" config-ref="Database_Config">
-			<db:sql><![CDATA[SELECT *
-FROM dbo.Article_Stock
-WHERE ID = :ID]]></db:sql>
-			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
-		</db:select>
+		
+		<flow-ref doc:name="SearchIDdynamique" doc:id="5b798cc2-a92a-430e-9915-1be8fbc28557" name="SearchIDdynamique"/>
 		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="00fa5b35-41f2-4957-a292-2717e9e96d8d" message="L'article que vous recherchez n'existe pas">
 		</validation:is-not-empty-collection>
 		<ee:transform doc:name="Transform Message" doc:id="0c31a765-06c7-41be-a5e5-8c100a7033cc">
@@ -53,17 +49,71 @@ output application/json
 		</error-handler>
 	</flow>
 	<flow name="PutArticleByID" doc:id="653399e8-c351-4aa2-8152-b2b6832b5fe9" >
-		<set-variable value="#[payload]" doc:name="Set originalPayload" doc:id="b3d0353b-67a9-496a-8501-8307b77c4961" variableName="originalPayload"/>
-		<db:select doc:name="Select" doc:id="29f8aecf-afd2-4783-9c40-498a31440386" config-ref="Database_Config">
-			<db:sql><![CDATA[SELECT *
-FROM dbo.Article_Stock
-WHERE ID = :ID]]></db:sql>
-			<db:input-parameters><![CDATA[#[{'ID' :attributes.uriParams.'id'}]]]></db:input-parameters>
-		</db:select>
+		<set-variable value="#[message.attributes.queryParams.forceParams]" doc:name="Set forceParams" doc:id="8994604c-f334-4b7e-8e5c-8484e857da2c" variableName="forceParams" />
+		<set-variable value="#[payload]" doc:name="Set originalPayload" doc:id="5d6e2dbc-f4a0-43de-8e67-24d2750c707e" variableName="originalPayload"/>
+		<flow-ref doc:name="SearchIDdynamique" doc:id="9d353fd7-a332-408a-b541-46f2195f055b" name="SearchIDdynamique"/>
+		<choice doc:name="Choice" doc:id="4814b651-890c-4759-a340-fc8a494f4c27" >
+			<when expression="#[vars.forceParams != null and !isEmpty(payload)]">
+				<db:update doc:name="Update Article" doc:id="95ac1ca1-2356-4a54-80aa-ed312ee42e83" config-ref="Database_Config">
+					<db:sql ><![CDATA[UPDATE Article_Stock
+SET titre = :title,
+	type = :type_article,
+	stock_available = :stock_available,
+	date_update = :data_update	
+WHERE ID = :id]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{'id': vars.originalPayload.'id' , 'title': vars.originalPayload.'title', 'stock_available':vars.originalPayload.stock_available , 'data_update':vars.originalPayload.data_update , 'type_article':vars.originalPayload.type_article}]]]></db:input-parameters>
+				</db:update>
+			</when>
+			<when expression="#[vars.forceParams != null and isEmpty(payload)]">
+				<db:insert doc:name="Insert Article" doc:id="9823c040-c826-419c-98ca-556148f5570c" config-ref="Database_Config">
+					<db:sql ><![CDATA[Insert into Article_Stock(ID,titre,[type],stock_available , date_update) 
+values (:id,:title,:type_article,:stock_available,:data_update);]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{'id': vars.originalPayload.'id' , 'title': vars.originalPayload.'title', 'stock_available':vars.originalPayload.stock_available , 'data_update':vars.originalPayload.data_update, 'type_article':vars.originalPayload.type_article}]]]></db:input-parameters>
+				</db:insert>
+			</when>
+			<otherwise >
+				<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="e7f3de95-b7f1-430b-9621-8fac8fc8fb65" message="L'article que vous voulez mettre à jour n'existe pas "/>
+				<db:update doc:name="Update Article" doc:id="be6037db-0f57-4efb-8ee2-1d9ac1b69993" config-ref="Database_Config">
+					<db:sql ><![CDATA[UPDATE Article_Stock
+SET titre = :title,
+	type = :type_article,
+	stock_available = :stock_available,
+	date_update = :data_update	
+WHERE ID = :id]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{'id': vars.originalPayload.'id' , 'title': vars.originalPayload.'title', 'stock_available':vars.originalPayload.stock_available , 'data_update':vars.originalPayload.data_update , 'type_article':vars.originalPayload.type_article}]]]></db:input-parameters>
+				</db:update>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="252ad7a8-c7a6-4213-a3a5-d49fa1e68392" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'message' : "success yes !",
+	'etat_précédent': payload
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f5d9ede0-1ea9-4040-a5cd-123aff9163dc" type="VALIDATION:EMPTY_COLLECTION">
+				<ee:transform doc:name="Transform Message" doc:id="c72a6912-2e1b-48a7-897a-4f876334346c" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[output application/json
+---
+{
+	'message': error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="409" doc:name="Set httpStatus" doc:id="8e43e561-51d5-4c8c-8d61-ca2015507993" variableName="httpStatus"/>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 	<flow name="PostArticles" doc:id="9d2e9448-16da-4945-902e-0f82bdb74e6c">
 		<flow-ref doc:name="InitialisationPostArticle" doc:id="680b593e-5f8a-4aa9-882f-295c6f615986" name="Initialisation" />
-		<db:select doc:name="Select" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config" target="matchIDList">
+		<db:select doc:name="Select list ID existant" doc:id="1406736d-7c74-4fcb-8062-4a95d22da9a2" config-ref="Database_Config" target="matchIDList">
 			<db:sql><![CDATA[#['SELECT ID FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>
@@ -111,7 +161,7 @@ output application/json
 	</flow>
 	<flow name="PutArticles" doc:id="e4493cc6-734e-4ab8-9145-c3ebd6006286">
 		<flow-ref doc:name="InitialisationPutArticle" doc:id="663fd08a-c0b7-425f-822a-deae9be3f4ed" name="Initialisation" />
-		<db:select doc:name="Select" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config" target="matchIDList">
+		<db:select doc:name="Select list article existant (état précédant)" doc:id="cf7045cd-f291-480e-93c6-6a2a18f5e7df" config-ref="Database_Config" target="matchIDList">
 			<db:sql><![CDATA[#['SELECT * FROM dbo.Article_Stock WHERE ID IN( $(vars.inClause) )']]]></db:sql>
 			<db:input-parameters><![CDATA[#[vars.inputParameters]]]></db:input-parameters>
 		</db:select>

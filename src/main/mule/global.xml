@@ -60,6 +60,18 @@ payload]]></ee:set-payload>
 				</ee:message>
 			</ee:transform>
 	</sub-flow>
+	<sub-flow name="SearchIDdynamique" doc:id="abf42fff-fa21-4ff9-a21d-8e1352743a7c" >
+		<set-variable value="#[message.attributes.uriParams.'id']" doc:name="Set Variable" doc:id="47ec77a7-54ae-4aa5-a6f3-25833723ed8f" variableName="varID"/>
+		<ee:transform doc:name="form select query article by ID" doc:id="394b1883-22d0-4764-a0fd-21c2b012c612" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"SELECT * FROM dbo.Article_Stock WHERE ID  = '$(vars.varID)'"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="CallDatabase" doc:id="ea87a2d5-2b1f-4861-a41e-7b02992900c1" name="CallDatabase"/>
+	</sub-flow>
 	<sub-flow name="Initialisation" doc:id="29929473-0f4f-4362-985e-ef5800c1f520" >
 		<set-variable doc:name=" Set forceParams" doc:id="e2be3e16-8c86-4238-9191-e159b65272be" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
 		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="e2c6ba81-4359-4a2f-a369-f8b54478d76e" variableName="originalPayload" />
