@@ -13,7 +13,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<db:mssql-connection host="${sql_remote.host}" port="${sql_remote.port}" user="${sql_remote.user}" password="${sql_remote.password}" databaseName="${sql_remote.db}"/>
 	</db:config>
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="95befe68-d298-410d-bd82-df9864225bd1" >
-		<http:listener-connection host="0.0.0.0" port="8081" />
+		<http:listener-connection host="0.0.0.0" port="8081" protocol="HTTPS"/>
 	</http:listener-config>
 	 <apikit:config name="main-config" api="main.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 	<sub-flow name="Pagination" doc:id="00645780-fc23-4653-8f96-68ef17890bf4" >
