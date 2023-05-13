@@ -67,7 +67,7 @@ payload]]></ee:set-payload>
 			</ee:transform>
 	</sub-flow>
 	<sub-flow name="SearchIDdynamique" doc:id="abf42fff-fa21-4ff9-a21d-8e1352743a7c" >
-		<set-variable value="#[message.attributes.uriParams.'id']" doc:name="Set Variable" doc:id="47ec77a7-54ae-4aa5-a6f3-25833723ed8f" variableName="varID"/>
+		<set-variable value="#[message.attributes.uriParams.'id']" doc:name="uriParamsId" doc:id="47ec77a7-54ae-4aa5-a6f3-25833723ed8f" variableName="varID"/>
 		<ee:transform doc:name="form select query article by ID" doc:id="394b1883-22d0-4764-a0fd-21c2b012c612" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
