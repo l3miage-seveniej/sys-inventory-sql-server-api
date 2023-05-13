@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
-	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
-	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="b43fe657-3e6d-4b8c-9e5b-93f25c148466" >
+		<sftp:connection workingDir="Archives" host="sftpdemolinkr.blob.core.windows.net" username="sftpdemolinkr.sftpdemolinkr.sftpdemolinkr" password="YKaoM00QPhn/fBAN3IZMIsQ5gUEex4bc" />
+	</sftp:config>
 	<flow name="GetArticles" doc:id="ccb132b7-2f23-4e03-b9ea-da0a417d1b0f" >
 		<flow-ref doc:name="Pagination" doc:id="4c2a196c-083b-4003-aa42-25f7eef7bf88" name="Pagination"/>
 		
@@ -208,6 +213,9 @@ output application/json
 				<set-variable value="409" doc:name="Set httpStatus" doc:id="cc03786e-946d-4aab-9f46-8a782b6972d9" variableName="httpStatus"/>
 			</on-error-propagate>
 		</error-handler>
+	</flow>
+	<flow name="sys-inventory-sql-serverFlow" doc:id="a0441cab-8505-449a-84c0-7a7bd9dd9662" >
+		<sftp:list doc:name="List" doc:id="2cd6066f-e747-4d8e-985f-7d5eee5d3f8f" config-ref="SFTP_Config"/>
 	</flow>
 	
 	
