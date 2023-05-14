@@ -35,7 +35,7 @@ output application/json
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/java
-var rowcount = payload.'TOTAL' reduce ($$ ++ $) as Number
+var rowcount = vars.selectOutput.'TOTAL' reduce ($$ ++ $) as Number
 var maxSize = ceil(rowcount/vars.limit)
 fun prepareList(list:Array, maxSize: Number) = if(sizeOf(list) >= maxSize )
 list
@@ -66,19 +66,7 @@ payload]]></ee:set-payload>
 				</ee:message>
 			</ee:transform>
 	</sub-flow>
-	<sub-flow name="SearchIDdynamique" doc:id="abf42fff-fa21-4ff9-a21d-8e1352743a7c" >
-		<set-variable value="#[message.attributes.uriParams.'id']" doc:name="uriParamsId" doc:id="47ec77a7-54ae-4aa5-a6f3-25833723ed8f" variableName="varID"/>
-		<ee:transform doc:name="form select query article by ID" doc:id="394b1883-22d0-4764-a0fd-21c2b012c612" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-"SELECT * FROM dbo.Article_Stock WHERE ID  = '$(vars.varID)'"]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<flow-ref doc:name="CallDatabase" doc:id="ea87a2d5-2b1f-4861-a41e-7b02992900c1" name="CallDatabase"/>
-	</sub-flow>
-	<sub-flow name="Initialisation" doc:id="29929473-0f4f-4362-985e-ef5800c1f520" >
+	<sub-flow name="InitialisationPostPutMulti" doc:id="29929473-0f4f-4362-985e-ef5800c1f520">
 		<set-variable doc:name=" Set forceParams" doc:id="e2be3e16-8c86-4238-9191-e159b65272be" variableName="forceParams" value="#[message.attributes.queryParams.forceParams]" />
 		<set-variable value="#[payload]" doc:name="originalPayload" doc:id="e2c6ba81-4359-4a2f-a369-f8b54478d76e" variableName="originalPayload" />
 		<ee:transform doc:name="Generate dynamic in-clause" doc:id="98ef50b9-7c73-4f59-bd61-70e32887ca4e">
@@ -102,6 +90,23 @@ output application/java
 payload.id map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
+	</sub-flow>
+	<sub-flow name="SearchIDdynamique" doc:id="abf42fff-fa21-4ff9-a21d-8e1352743a7c" >
+		<set-variable value="#[message.attributes.uriParams.'id']" doc:name="uriParamsId" doc:id="47ec77a7-54ae-4aa5-a6f3-25833723ed8f" variableName="varID"/>
+		<ee:transform doc:name="form select query article by ID" doc:id="394b1883-22d0-4764-a0fd-21c2b012c612" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"SELECT * FROM dbo.Article_Stock WHERE ID  = '$(vars.varID)'"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="CallDatabase" doc:id="ea87a2d5-2b1f-4861-a41e-7b02992900c1" name="CallDatabase"/>
+	</sub-flow>
+	<sub-flow name="InitialisationPut" doc:id="5cfec2ce-0c19-4f0a-a8d0-5dec02111123" >
+		<set-variable value="#[message.attributes.queryParams.forceParams]" doc:name="Set forceParams" doc:id="a6b6ce60-15dd-4cac-9dab-eef7bb19e669" variableName="forceParams" />
+		<set-variable value="#[payload]" doc:name="Set originalPayload" doc:id="5f69e1c9-5e4e-4c0b-86c2-b9782b630033" variableName="originalPayload"/>
+		<flow-ref doc:name="SearchIDdynamique" doc:id="e4f416ed-5f59-4dcd-bfa8-d1ed52beebf4" name="SearchIDdynamique"/>
 	</sub-flow>
 	<sub-flow name="ProcessPostPut" doc:id="d1249e4b-4217-4c97-a8aa-ca948bb3338b">
 		<scatter-gather doc:name="Scatter-Gather" doc:id="e77ba404-9580-4c67-bafb-2f58b0981278">
@@ -166,7 +171,7 @@ WHERE ID = :id]]></db:sql>
 		</db:bulk-update>
 	</sub-flow>
 	<sub-flow name="CallDatabase" doc:id="c284016e-b87f-43c1-b807-e4a2e5f7a4d6" >
-		<db:select doc:name="Select" doc:id="146a254f-22f1-4f41-9fee-30fcb9bec645" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="146a254f-22f1-4f41-9fee-30fcb9bec645" config-ref="Database_Config" target="selectOutput">
 			<db:sql ><![CDATA[#['$(payload)']]]></db:sql>
 		</db:select>
 	</sub-flow>
