@@ -174,5 +174,7 @@ WHERE ID = :id]]></db:sql>
 		<db:select doc:name="Select" doc:id="146a254f-22f1-4f41-9fee-30fcb9bec645" config-ref="Database_Config" target="selectOutput">
 			<db:sql ><![CDATA[#['$(payload)']]]></db:sql>
 		</db:select>
-	</sub-flow>
+		<logger level="INFO" doc:name="Logger" doc:id="ff0bf0df-2cff-410f-83ad-9ff47d25bea7" message="#[vars.selectOutput]"/>
+	
+</sub-flow>
 </mule>
